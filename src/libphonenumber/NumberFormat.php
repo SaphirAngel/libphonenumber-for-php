@@ -12,6 +12,7 @@ class NumberFormat
     protected $leadingDigitsPattern = array();
     protected $nationalPrefixFormattingRule = null;
     protected $domesticCarrierCodeFormattingRule = null;
+    protected $nationalPrefixOptionalWhenFormatting = false;
 
     /**
      * @return boolean
@@ -168,6 +169,33 @@ class NumberFormat
     }
 
     /**
+     * @return boolean
+     */
+    public function hasNationalPrefixOptionalWhenFormatting()
+    {
+        return isset($this->nationalPrefixOptionalWhenFormatting);
+    }
+
+    /**
+     * @return string
+     */
+    public function getNationalPrefixOptionalWhenFormatting ()
+    {
+        return $this->nationalPrefixOptionalWhenFormatting;
+    }
+
+    /**
+     * @param string $value
+     * @return NumberFormat
+     */
+    public function setNationalPrefixOptionalWhenFormatting ($value)
+    {
+        $this->nationalPrefixOptionalWhenFormatting = $value;
+
+        return $this;
+    }
+
+    /**
      * @param NumberFormat $other
      * @return NumberFormat
      */
@@ -188,6 +216,9 @@ class NumberFormat
         }
         if ($other->hasDomesticCarrierCodeFormattingRule()) {
             $this->setDomesticCarrierCodeFormattingRule($other->getDomesticCarrierCodeFormattingRule());
+        }
+        if ($other->hasNationalPrefixOptionalWhenFormatting()) {
+            $this->setNationalPrefixOptionalWhenFormatting($other->getNationalPrefixOptionalWhenFormatting());
         }
         return $this;
     }

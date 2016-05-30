@@ -105,8 +105,8 @@ class PhoneNumberUtil
     protected static $SEPARATOR_PATTERN;
     protected static $CAPTURING_DIGIT_PATTERN;
     protected static $VALID_START_CHAR_PATTERN = null;
-    protected static $SECOND_NUMBER_START_PATTERN = "[\\\\/] *x";
-    protected static $UNWANTED_END_CHAR_PATTERN = "[[\\P{N}&&\\P{L}]&&[^#]]+$";
+    public static $SECOND_NUMBER_START_PATTERN = "[\\\\/][ ]*x";
+    public static $UNWANTED_END_CHAR_PATTERN = "[[\\P{N}&&\\P{L}]&&[^#]]+$";
     protected static $DIALLABLE_CHAR_MAPPINGS = array();
     protected static $CAPTURING_EXTN_DIGITS;
 
@@ -203,6 +203,7 @@ class PhoneNumberUtil
      * @var String
      */
     protected static $EXTN_PATTERNS_FOR_PARSING;
+    public static $EXTN_PATTERNS_FOR_MATCHING;
     protected static $EXTN_PATTERN = null;
     protected static $VALID_PHONE_NUMBER_PATTERN;
     protected static $MIN_LENGTH_PHONE_NUMBER_PATTERN;
@@ -439,6 +440,7 @@ class PhoneNumberUtil
         $singleExtnSymbolsForParsing = "," . $singleExtnSymbolsForMatching;
 
         static::$EXTN_PATTERNS_FOR_PARSING = static::createExtnPattern($singleExtnSymbolsForParsing);
+        static::$EXTN_PATTERNS_FOR_MATCHING = static::createExtnPattern($singleExtnSymbolsForMatching);
     }
 
     // The FIRST_GROUP_PATTERN was originally set to $1 but there are some countries for which the
@@ -533,8 +535,8 @@ class PhoneNumberUtil
      */
     public static function formattingRuleHasFirstGroupOnly($nationalPrefixFormattingRule)
     {
-        $m = preg_match(static::FIRST_GROUP_ONLY_PREFIX_PATTERN, $nationalPrefixFormattingRule);
-        return $m > 0;
+        return strlen($nationalPrefixFormattingRule) == 0 || (new Matcher(static::FIRST_GROUP_ONLY_PREFIX_PATTERN,
+            $nationalPrefixFormattingRule));
     }
 
     /**
@@ -1283,6 +1285,17 @@ class PhoneNumberUtil
         return $phoneNumber;
     }
 
+
+    public function findNumbers($text, $defaultRegion, Leniency $leniency = null) {
+        if ($leniency == null) {
+            $leniency = new Leniency(Leniency::VALID);
+        }
+        return new PhoneNumberMatcher($this, $text, $defaultRegion, $leniency, 10000000);
+        //return findNumbers(text, defaultRegion, Leniency.VALID, Long.MAX_VALUE);
+    }
+
+
+
     /**
      * A helper function to set the values related to leading zeros in a PhoneNumber.
      * @param string $nationalNumber
@@ -1465,7 +1478,7 @@ class PhoneNumberUtil
         } else {
             $normalizedNationalNumber = ltrim($normalizedNationalNumber, '0');
         }
-
+        
         $phoneNumber->setNationalNumber($normalizedNationalNumber);
     }
 
@@ -1924,6 +1937,7 @@ class PhoneNumberUtil
     protected function testNumberLengthAgainstPattern($numberPattern, $number)
     {
         $numberMatcher = new Matcher($numberPattern, $number);
+        
         if ($numberMatcher->matches()) {
             return ValidationResult::IS_POSSIBLE;
         }
@@ -2645,6 +2659,7 @@ class PhoneNumberUtil
     {
         $countryCode = $number->getCountryCode();
         $metadata = $this->getMetadataForRegionOrCallingCode($countryCode, $regionCode);
+
         if (($metadata === null) ||
             (static::REGION_CODE_FOR_NON_GEO_ENTITY !== $regionCode &&
                 $countryCode !== $this->getCountryCodeForValidRegion($regionCode))
@@ -3182,6 +3197,7 @@ class PhoneNumberUtil
     {
         $nationalNumber = $this->getNationalSignificantNumber($number);
         $countryCode = $number->getCountryCode();
+        
         // Note: For Russian Fed and NANPA numbers, we just use the rules from the default region (US or
         // Russia) since the getRegionCodeForNumber will not work if the number is possible but not
         // valid. This would need to be revisited if the possible number pattern ever differed between
@@ -3195,6 +3211,7 @@ class PhoneNumberUtil
         $metadata = $this->getMetadataForRegionOrCallingCode($countryCode, $regionCode);
 
         $possibleNumberPattern = $metadata->getGeneralDesc()->getPossibleNumberPattern();
+
         return $this->testNumberLengthAgainstPattern($possibleNumberPattern, $nationalNumber);
     }
 

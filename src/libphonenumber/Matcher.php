@@ -27,6 +27,11 @@ class Matcher
     protected $groups = array();
 
     /**
+     * @var int
+     */
+    protected $offset = 0;
+
+    /**
      * @param string $pattern
      * @param string $subject
      */
@@ -51,8 +56,15 @@ class Matcher
                 // no changes	    
                 break;
         }
-        $final_pattern = '/' . $final_pattern . '/x';
-        return (preg_match($final_pattern, $this->subject, $this->groups, PREG_OFFSET_CAPTURE) == 1) ? true : false;
+
+        $final_pattern = '/' . $final_pattern . '/uix';
+
+        $offset = strlen(mb_substr($this->subject, 0, $this->offset, 'UTF-8'));
+        $found = (preg_match($final_pattern, $this->subject, $this->groups, PREG_OFFSET_CAPTURE, $offset) == 1) ? true : false;
+        if ($found) {
+            $this->offset = $this->start(0) + mb_strlen($this->groups[0][0], 'UTF-8'); //$this->groups[0][1] + strlen($this->groups[0][0]);
+        }
+        return $found;
     }
 
     /**
@@ -72,10 +84,15 @@ class Matcher
     }
 
     /**
+     * @param int $index
      * @return bool
      */
-    public function find()
+    public function find($index = null)
     {
+        if ($index !== null) {
+            $this->offset = $index;
+        }
+
         return $this->doMatch('find');
     }
 
@@ -115,19 +132,21 @@ class Matcher
         if (!isset($this->groups[$group])) {
             return null;
         }
-        return $this->groups[$group][1] + strlen($this->groups[$group][0]);
+        //return $this->groups[$group][1] + strlen($this->groups[$group][0]);
+        return $this->start($group) + mb_strlen($this->groups[$group][0], 'UTF-8');
     }
 
     public function start($group = null)
     {
-        if (isset($group) || $group === null) {
+        if ($group === null) {
             $group = 0;
         }
+
         if (!isset($this->groups[$group])) {
             return null;
         }
 
-        return $this->groups[$group][1];
+        return mb_strlen(substr($this->subject, 0, $this->groups[$group][1]), 'UTF-8');//$this->groups[$group][1];
     }
 
     /**
